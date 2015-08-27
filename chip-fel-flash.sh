@@ -88,10 +88,10 @@ fel spl $SPL
 sleep 1 # wait for DRAM initialization to complete
 
 echo == upload images ==
-fel write $SPL_MEM_ADDR $PADDED_SPL
-fel write $UBOOT_MEM_ADDR $PADDED_UBOOT
-fel write $UBI_MEM_ADDR $UBI
-fel write $UBOOT_SCRIPT_MEM_ADDR $UBOOT_SCRIPT
+pv $PADDED_SPL | fel write $SPL_MEM_ADDR -
+pv $PADDED_UBOOT | fel write $UBOOT_MEM_ADDR -
+pv $UBI | fel write $UBI_MEM_ADDR -
+pv $UBOOT_SCRIPT | fel write $UBOOT_SCRIPT_MEM_ADDR -
 
 echo == execute the main u-boot binary ==
 fel exe $UBOOT_MEM_ADDR
