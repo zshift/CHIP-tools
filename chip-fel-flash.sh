@@ -11,6 +11,7 @@ PATH=$PATH:$BUILDROOT_OUTPUT_DIR/host/usr/bin
 TMPDIR=`mktemp -d`
 PADDED_SPL="$TMPDIR/sunxi-padded-spl"
 PADDED_SPL_SIZE=0
+REPEATED_SPL="$TMPDIR/sunxi-repeated-spl"
 UBOOT_ENV="$BUILDROOT_OUTPUT_DIR/images/uboot-env.bin"
 UBOOT_SCRIPT="$TMPDIR/uboot.scr"
 UBOOT_SCRIPT_MEM_ADDR=0x43100000
@@ -42,7 +43,16 @@ prepare_images() {
 	dd if=/dev/urandom of=$out bs=8k count=1 seek=3 conv=sync
 	dd if=$in of=$out bs=8k count=1 skip=2 seek=4 conv=sync
 	dd if=/dev/urandom of=$out bs=8k count=1 seek=5 conv=sync
+	dd if=ff of=$out bs=16k count=61 seek=3 conv=sync
+
 	PADDED_SPL_SIZE=`stat --printf="%s" $out | xargs printf "0x%08x"`
+
+	# Repeat the SPL binary every 64 pages.
+
+	dd if=$out of=$REPEATED_SPL bs=1M count=1 seek=0 conv=sync
+	dd if=$out of=$REPEATED_SPL bs=1M count=1 seek=1 conv=sync
+	dd if=$out of=$REPEATED_SPL bs=1M count=1 seek=2 conv=sync
+	dd if=$out of=$REPEATED_SPL bs=1M count=1 seek=3 conv=sync
 
 	# Align the u-boot image on a page boundary
 	dd if=$UBOOT of=$PADDED_UBOOT bs=16k conv=sync
@@ -76,8 +86,8 @@ echo == Executing the main u-boot binary ==
 fel exe $UBOOT_MEM_ADDR
 
 echo == Writing images ==
-fastboot flash spl $PADDED_SPL
-fastboot flash spl-backup $PADDED_SPL
+fastboot flash spl $REPEATED_SPL
+fastboot flash spl-backup $REPEATED_SPL
 fastboot flash uboot $PADDED_UBOOT
 fastboot flash env $UBOOT_ENV
 fastboot flash UBI $UBI
