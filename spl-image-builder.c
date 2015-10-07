@@ -105,8 +105,8 @@ struct image_info {
 	int ecc_step_size;
 	int page_size;
 	int oob_size;
+	int block_size;
 	int usable_page_size;
-	int repeat;
 	int disable_scrambler;
 	const char *source;
 	const char *dest;
@@ -1536,7 +1536,10 @@ static int create_image(const struct image_info *info)
 			       (info->ecc_step_size + 4 + eccbytes);
 	int page = 0, page_offset = 0;
 	FILE *src, *dst, *rnd;
-	int repeat = info->repeat;
+	int pages_per_block = info->block_size / info->page_size;
+	int repeat = pages_per_block / 64;
+	int oimage_offset = 0;
+	char *oimage_file;
 
 	bch = init_bch(14, info->ecc_strength, BCH_PRIMITIVE_POLY);
 	if (!bch) {
@@ -1558,11 +1561,13 @@ static int create_image(const struct image_info *info)
 		return -1;
 	}
 
-	dst = fopen(info->dest, "w");
+	asprintf(&oimage_file, "%s.%x", info->dest, oimage_offset);
+	dst = fopen(oimage_file, "w");
 	if (!dst) {
 		printf("Failed to open dest file (%s)\n", info->dest);
 		return -1;
 	}
+	free(oimage_file);
 
 	rnd = fopen("/dev/urandom", "r");
 	if (!rnd) {
@@ -1598,14 +1603,14 @@ static int create_image(const struct image_info *info)
 			if (!repeat--)
 				break;
 
-			memset(buffer, 0xff, info->page_size + info->oob_size);
-			while (page % 0x40) {
-				fwrite(buffer,
-				       info->page_size + info->oob_size,
-				       1, dst);
-				page++;
-			}
+			oimage_offset += 64 * info->page_size;
+			asprintf(&oimage_file, "%s.%x", info->dest, oimage_offset);
+			fclose(dst);
+			dst = fopen(oimage_file, "w");
+			free(oimage_file);
 
+			page = (page + 64) & ~(64 - 1);
+			memset(buffer, 0xff, info->page_size + info->oob_size);
 			page_offset = 0;
 			fseek(src, 0, SEEK_SET);
 			continue;
@@ -1652,8 +1657,8 @@ static void display_help(int status)
 "-c size     --ecc-step-size=size    ECC step size\n"
 "-p size     --page-size=size        Page size\n"
 "-o size     --oob-size=size         OOB size\n"
+"-b size     --block-size=size       Block size\n"
 "-u size     --usable-page-size=size Usable page size\n"
-"-r num      --repeat=num            Number of redundant SPL images\n"
 "-d          --disable-scrambler     Disable the second scrambling pass\n"
 "\n");
 	exit(status);
@@ -1676,13 +1681,13 @@ int main(int argc, char **argv)
 			{"ecc-step-size", required_argument, 0, 'c'},
 			{"page-size", required_argument, 0, 'p'},
 			{"oob-size", required_argument, 0, 'o'},
+			{"block-size", required_argument, 0, 'b'},
 			{"usable-page-size", required_argument, 0, 'u'},
-			{"repeat", required_argument, 0, 'r'},
 			{"disable-scrambler", no_argument, 0, 'd'},
 			{0, 0, 0, 0},
 		};
 
-		int c = getopt_long(argc, argv, "s:c:p:o:u:r:d",
+		int c = getopt_long(argc, argv, "s:c:p:o:b:u:d",
 				long_options, &option_index);
 		if (c == EOF)
 			break;
@@ -1703,13 +1708,11 @@ int main(int argc, char **argv)
 		case 'o':
 			info.oob_size = strtol(optarg, NULL, 0);
 			break;
+		case 'b':
+			info.block_size = strtol(optarg, NULL, 0);
+			break;
 		case 'u':
 			info.usable_page_size = strtol(optarg, NULL, 0);
-			break;
-		case 'r':
-			info.repeat = strtol(optarg, NULL, 0);
-			if (info.repeat > 7)
-				info.repeat = 7;
 			break;
 		case 'd':
 			info.disable_scrambler = 1;
