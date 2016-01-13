@@ -17,7 +17,12 @@ while getopts "flpu:" opt; do
       AFTER_FLASHING=loop
       ;;
     u)
-      BUILDROOT_OUTPUT_DIR="${OPTARG}"
+      IFS=':' read -ra OUTPUT_DIRS <<< "${OPTARG}"
+      BUILDROOT_OUTPUT_DIR="${OUTPUT_DIRS[0]}"
+      PROD_BUILDROOT_OUTPUT_DIR="${OUTPUT_DIRS[1]}"
+      if [ ! -n $PROD_BUILDROOT_OUTPUT_DIR ]; then
+        PROD_BUILDROOT_OUTPUT_DIR=$BUILDROOT_OUTPUT_DIR
+      fi
       ;;
     p)
       POCKET_CHIP=true
@@ -30,6 +35,7 @@ while getopts "flpu:" opt; do
 done
 
 echo "BUILDROOT_OUTPUT_DIR = $BUILDROOT_OUTPUT_DIR"
+echo "PROD_BUILDROOT_OUTPUT_DIR = $PROD_BUILDROOT_OUTPUT_DIR"
 
 FEL=fel
 
@@ -42,22 +48,26 @@ if [ "$1" == "erase-bb" ]; then
 	NAND_ERASE_BB=true
 fi
 
-PATH=$PATH:$BUILDROOT_OUTPUT_DIR/host/usr/bin
+PATH=$PATH:$PROD_BUILDROOT_OUTPUT_DIR/host/usr/bin
 TMPDIR=`mktemp -d -t chipflashXXXXXX`
 PADDED_SPL="${BUILDROOT_OUTPUT_DIR}/images/sunxi-spl-with-ecc.bin"
 PADDED_SPL_SIZE=0
 UBOOT_SCRIPT="$TMPDIR/uboot.scr"
 UBOOT_SCRIPT_MEM_ADDR=0x43100000
 UBOOT_SCRIPT_SRC="$TMPDIR/uboot.cmds"
-SPL="$BUILDROOT_OUTPUT_DIR/images/sunxi-spl.bin"
+SPL="$PROD_BUILDROOT_OUTPUT_DIR/images/sunxi-spl.bin"
 SPL_MEM_ADDR=0x43000000
 UBOOT="$BUILDROOT_OUTPUT_DIR/images/u-boot-dtb.bin"
+PROD_UBOOT="$PROD_BUILDROOT_OUTPUT_DIR/images/u-boot-dtb.bin"
 PADDED_UBOOT="$TMPDIR/padded-uboot"
 PADDED_UBOOT_SIZE=0x400000
-UBOOT_MEM_ADDR=0x4a000000
+UBOOT_MEM_ADDR=0x41000000
+PROD_UBOOT_MEM_ADDR=0x4a000000
 UBI="$BUILDROOT_OUTPUT_DIR/images/rootfs.ubi"
 SPARSE_UBI="${TMPDIR}/rootfs.ubi.sparse"
 UBI_MEM_ADDR=0x4b000000
+UBOOT_ENV_ADDR=0x43000000
+UBOOT_ENV_SIZE=0x20000
 
 UBI_SIZE=`filesize $UBI | xargs printf "0x%08x"`
 PAGE_SIZE=16384
@@ -96,6 +106,8 @@ prepare_uboot_script() {
   echo "nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
 
   echo "nand write $UBOOT_MEM_ADDR 0x800000 $PADDED_UBOOT_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "nand write $UBOOT_MEM_ADDR 0xc00000 $PADDED_UBOOT_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "setenv mtdparts mtdparts=sunxi-nand.0:4m(spl),4m(spl-backup),4m(uboot),4m(uboot-backup),-(UBI)"
   echo "setenv bootargs root=ubi0:rootfs rootfstype=ubifs rw earlyprintk ubi.mtd=4" >> "${UBOOT_SCRIPT_SRC}"
   echo "setenv bootcmd 'gpio set PB2; if test -n \${fel_booted} && test -n \${scriptaddr}; then echo '(FEL boot)'; source \${scriptaddr}; fi; mtdparts; ubi part UBI; ubifsmount ubi0:rootfs; ubifsload \$fdt_addr_r /boot/sun5i-r8-chip.dtb; ubifsload \$kernel_addr_r /boot/zImage; bootz \$kernel_addr_r - \$fdt_addr_r'" >> "${UBOOT_SCRIPT_SRC}"
   echo "setenv fel_booted 0" >> "${UBOOT_SCRIPT_SRC}"
@@ -112,8 +124,6 @@ prepare_uboot_script() {
     echo "setenv video-mode sunxi:640x480-24@60,monitor=composite-ntsc,overscan_x=40,overscan_y=20" >> "${UBOOT_SCRIPT_SRC}"
   fi
 
-  echo "saveenv" >> "${UBOOT_SCRIPT_SRC}"
-
   if [[ "${METHOD}" == "fel" ]]; then
     echo "nand write.slc-mode.trimffs $UBI_MEM_ADDR 0x1000000 $UBI_SIZE" >> "${UBOOT_SCRIPT_SRC}"
     echo "mw \${scriptaddr} 0x0" >> "${UBOOT_SCRIPT_SRC}"
@@ -121,6 +131,9 @@ prepare_uboot_script() {
     echo "echo going to fastboot mode" >>"${UBOOT_SCRIPT_SRC}"
     echo "fastboot 0" >>"${UBOOT_SCRIPT_SRC}"
   fi
+
+  # Save environment in uboot-env UBI volume
+  echo "env export -c -s ${UBOOT_ENV_SIZE} ${UBOOT_ENV_ADDR}; ubi part UBI; ubi write ${UBOOT_ENV_ADDR} uboot-env ${UBOOT_ENV_SIZE}" >> "${UBOOT_SCRIPT_SRC}"
 
   if [[ "${AFTER_FLASHING}" == "boot" ]]; then
     echo "echo " >>"${UBOOT_SCRIPT_SRC}"
@@ -167,6 +180,7 @@ ${FEL} write $SPL_MEM_ADDR "${PADDED_SPL}" || ( echo "ERROR: could not write ${P
 assert_error 129
 
 echo == upload u-boot ==
+${FEL} write $PROD_UBOOT_MEM_ADDR "${PROD_UBOOT}" || ( echo "ERROR: could not write ${PROD_UBOOT}" && exit $? )
 ${FEL} write $UBOOT_MEM_ADDR "${PADDED_UBOOT}" || ( echo "ERROR: could not write ${PADDED_UBOOT}" && exit $? )
 assert_error 130
 
@@ -179,12 +193,12 @@ if [[ "${METHOD}" == "fel" ]]; then
   ${FEL} --progress write $UBI_MEM_ADDR "${UBI}"
 
   echo == execute the main u-boot binary ==
-  ${FEL} exe $UBOOT_MEM_ADDR
+  ${FEL} exe $PROD_UBOOT_MEM_ADDR
 
   echo == write ubi ==
 else
   echo == execute the main u-boot binary ==
-  ${FEL} exe $UBOOT_MEM_ADDR
+  ${FEL} exe $PROD_UBOOT_MEM_ADDR
   assert_error 132
 
   echo == creating sparse image ==
