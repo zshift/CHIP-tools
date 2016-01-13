@@ -70,34 +70,34 @@ prepare_images() {
     exit 1
   fi
 
-	PADDED_SPL_SIZE=$(filesize "${PADDED_SPL}")
+  PADDED_SPL_SIZE=$(filesize "${PADDED_SPL}")
   PADDED_SPL_SIZE=$(($PADDED_SPL_SIZE / ($PAGE_SIZE + $OOB_SIZE)))
   PADDED_SPL_SIZE=$(echo $PADDED_SPL_SIZE | xargs printf "0x%08x")
   echo "PADDED_SPL_SIZE=$PADDED_SPL_SIZE"
 
-	# Align the u-boot image on a page boundary
-	dd if="$UBOOT" of="$PADDED_UBOOT" bs=4M conv=sync
-	UBOOT_SIZE=`filesize "$PADDED_UBOOT" | xargs printf "0x%08x"`
+  # Align the u-boot image on a page boundary
+  dd if="$UBOOT" of="$PADDED_UBOOT" bs=4M conv=sync
+  UBOOT_SIZE=`filesize "$PADDED_UBOOT" | xargs printf "0x%08x"`
   echo "UBOOT_SIZE=${UBOOT_SIZE}"
   echo "PADDED_UBOOT_SIZE=${PADDED_UBOOT_SIZE}"
-	dd if=/dev/urandom of="$PADDED_UBOOT" seek=$((UBOOT_SIZE / 0x4000)) bs=16k count=$(((PADDED_UBOOT_SIZE - UBOOT_SIZE) / 0x4000))
+  dd if=/dev/urandom of="$PADDED_UBOOT" seek=$((UBOOT_SIZE / 0x4000)) bs=16k count=$(((PADDED_UBOOT_SIZE - UBOOT_SIZE) / 0x4000))
 }
 
 prepare_uboot_script() {
-	if [ "$NAND_ERASE_BB" = true ] ; then
-		echo "nand scrub -y 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
-	else
-		echo "nand erase 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
-	fi
+  if [ "$NAND_ERASE_BB" = true ] ; then
+    echo "nand scrub -y 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
+  else
+    echo "nand erase 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
+  fi
 
-	echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
 
-	echo "nand write $UBOOT_MEM_ADDR 0x800000 $PADDED_UBOOT_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "setenv bootargs root=ubi0:rootfs rootfstype=ubifs rw earlyprintk ubi.mtd=4" >> "${UBOOT_SCRIPT_SRC}"
-	echo "setenv bootcmd 'gpio set PB2; if test -n \${fel_booted} && test -n \${scriptaddr}; then echo '(FEL boot)'; source \${scriptaddr}; fi; mtdparts; ubi part UBI; ubifsmount ubi0:rootfs; ubifsload \$fdt_addr_r /boot/sun5i-r8-chip.dtb; ubifsload \$kernel_addr_r /boot/zImage; bootz \$kernel_addr_r - \$fdt_addr_r'" >> "${UBOOT_SCRIPT_SRC}"
+  echo "nand write $UBOOT_MEM_ADDR 0x800000 $PADDED_UBOOT_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+  echo "setenv bootargs root=ubi0:rootfs rootfstype=ubifs rw earlyprintk ubi.mtd=4" >> "${UBOOT_SCRIPT_SRC}"
+  echo "setenv bootcmd 'gpio set PB2; if test -n \${fel_booted} && test -n \${scriptaddr}; then echo '(FEL boot)'; source \${scriptaddr}; fi; mtdparts; ubi part UBI; ubifsmount ubi0:rootfs; ubifsload \$fdt_addr_r /boot/sun5i-r8-chip.dtb; ubifsload \$kernel_addr_r /boot/zImage; bootz \$kernel_addr_r - \$fdt_addr_r'" >> "${UBOOT_SCRIPT_SRC}"
   echo "setenv fel_booted 0" >> "${UBOOT_SCRIPT_SRC}"
 
   echo "echo Enabling Splash" >> "${UBOOT_SCRIPT_SRC}"
@@ -115,8 +115,8 @@ prepare_uboot_script() {
   echo "saveenv" >> "${UBOOT_SCRIPT_SRC}"
 
   if [[ "${METHOD}" == "fel" ]]; then
-	  echo "nand write.slc-mode.trimffs $UBI_MEM_ADDR 0x1000000 $UBI_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	  echo "mw \${scriptaddr} 0x0" >> "${UBOOT_SCRIPT_SRC}"
+    echo "nand write.slc-mode.trimffs $UBI_MEM_ADDR 0x1000000 $UBI_SIZE" >> "${UBOOT_SCRIPT_SRC}"
+    echo "mw \${scriptaddr} 0x0" >> "${UBOOT_SCRIPT_SRC}"
   else
     echo "echo going to fastboot mode" >>"${UBOOT_SCRIPT_SRC}"
     echo "fastboot 0" >>"${UBOOT_SCRIPT_SRC}"
@@ -134,19 +134,19 @@ prepare_uboot_script() {
     echo "while true; do; sleep 10; done;" >>"${UBOOT_SCRIPT_SRC}"
   fi
 
-	mkimage -A arm -T script -C none -n "flash CHIP" -d "${UBOOT_SCRIPT_SRC}" "${UBOOT_SCRIPT}"
+  mkimage -A arm -T script -C none -n "flash CHIP" -d "${UBOOT_SCRIPT_SRC}" "${UBOOT_SCRIPT}"
 }
 
 assert_error() {
-	ERR=$?
-	ERRCODE=$1
-	if [ "${ERR}" != "0" ]; then
-		if [ -z "${ERR}" ]; then
-			exit ${ERR}
-		else
-			exit ${ERRCODE}
-		fi
-	fi
+  ERR=$?
+  ERRCODE=$1
+  if [ "${ERR}" != "0" ]; then
+    if [ -z "${ERR}" ]; then
+      exit ${ERR}
+    else
+      exit ${ERRCODE}
+    fi
+  fi
 }
 
 echo == preparing images ==
@@ -175,33 +175,33 @@ ${FEL} write $UBOOT_SCRIPT_MEM_ADDR "${UBOOT_SCRIPT}" || ( echo "ERROR: could no
 assert_error 131
 
 if [[ "${METHOD}" == "fel" ]]; then
-	echo == upload ubi ==
-	${FEL} --progress write $UBI_MEM_ADDR "${UBI}"
+  echo == upload ubi ==
+  ${FEL} --progress write $UBI_MEM_ADDR "${UBI}"
 
-	echo == execute the main u-boot binary ==
-	${FEL} exe $UBOOT_MEM_ADDR
+  echo == execute the main u-boot binary ==
+  ${FEL} exe $UBOOT_MEM_ADDR
 
-	echo == write ubi ==
+  echo == write ubi ==
 else
-	echo == execute the main u-boot binary ==
-	${FEL} exe $UBOOT_MEM_ADDR
-	assert_error 132
+  echo == execute the main u-boot binary ==
+  ${FEL} exe $UBOOT_MEM_ADDR
+  assert_error 132
 
-	echo == creating sparse image ==
-	img2simg ${UBI} ${SPARSE_UBI} $((2*1024*1024))
-	assert_error 133
+  echo == creating sparse image ==
+  img2simg ${UBI} ${SPARSE_UBI} $((2*1024*1024))
+  assert_error 133
 
-	echo == waiting for fastboot ==
-	if wait_for_fastboot; then
-		fastboot -i 0x1f3a -u flash UBI ${SPARSE_UBI}
-		assert_error 134
+  echo == waiting for fastboot ==
+  if wait_for_fastboot; then
+    fastboot -i 0x1f3a -u flash UBI ${SPARSE_UBI}
+    assert_error 134
 
-		fastboot -i 0x1f3a continue
-		assert_error 135
-	else
-		rm -rf "${TMPDIR}"
-		exit 1
-	fi
+    fastboot -i 0x1f3a continue
+    assert_error 135
+  else
+    rm -rf "${TMPDIR}"
+    exit 1
+  fi
 fi
 
 rm -rf "${TMPDIR}"
