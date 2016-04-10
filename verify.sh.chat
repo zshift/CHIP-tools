@@ -1,7 +1,8 @@
-SAY "[CHAT] trying to login...\n"
+SAY "\n [ACM] Trying to login..."
 TIMEOUT 120
 '' \n ogin:-\n-login: root\n assword: chip\n '# ' ''
-SAY "\n[CHAT] successfully logged in\n"
+SAY "\n [ACM] Successfully logged in"
 TIMEOUT 120
 '# ' '/sbin/poweroff'
-SAY "\n[CHAT] powering off...\n"
+SAY "\n [ACM] Powering off..."
+TIMEOUT 2000
