@@ -6,7 +6,7 @@ source $SCRIPTDIR/common.sh
 ##############################################################
 #  main
 ##############################################################
-while getopts "flpu:" opt; do
+while getopts "flu:" opt; do
   case $opt in
     f)
       echo "fastboot enabled"
@@ -18,9 +18,6 @@ while getopts "flpu:" opt; do
       ;;
     u)
       BUILDROOT_OUTPUT_DIR="${OPTARG}"
-      ;;
-    p)
-      POCKET_CHIP=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -106,11 +103,7 @@ prepare_uboot_script() {
   echo "setenv splashpos m,m" >> "${UBOOT_SCRIPT_SRC}"
 
   echo "echo Configuring Video Mode"
-  if [[ "${POCKET_CHIP}" == "true" ]]; then
-    echo "setenv video-mode" >> "${UBOOT_SCRIPT_SRC}"
-  else
-    echo "setenv video-mode sunxi:640x480-24@60,monitor=composite-ntsc,overscan_x=40,overscan_y=20" >> "${UBOOT_SCRIPT_SRC}"
-  fi
+  echo "setenv video-mode sunxi:640x480-24@60,monitor=composite-ntsc,overscan_x=40,overscan_y=20" >> "${UBOOT_SCRIPT_SRC}"
 
   echo "saveenv" >> "${UBOOT_SCRIPT_SRC}"
 

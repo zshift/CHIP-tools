@@ -54,7 +54,7 @@ function cache_download {
 }
     
 
-while getopts "ufdpb:w:B:" opt; do
+while getopts "ufdb:w:B:" opt; do
   case $opt in
     u)
       echo "updating cache"
@@ -73,6 +73,7 @@ while getopts "ufdpb:w:B:" opt; do
     b)
       BRANCH="$OPTARG"
       echo "BRANCH = ${BRANCH}"
+      BRANCH_FLAG_USED="true"
       ;;
     w)
       WHAT="$OPTARG"
@@ -82,12 +83,6 @@ while getopts "ufdpb:w:B:" opt; do
       echo "debian selected"
       WHAT="debian"
       ;;
-    p)
-      echo "PocketC.H.I.P selected"
-      WHAT="pocketchip"
-      BUILD=123
-      FLASH_SCRIPT=./chip-fel-flash.sh -p
-      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -95,6 +90,11 @@ while getopts "ufdpb:w:B:" opt; do
   esac
 done
 
+if [[ -z "$FLASH_SCRIPT_OPTION" ]] && [[ -n "$BRANCH_FLAG_USED" ]]; then
+  echo "Flashing an image over 512MB requires '-f' fastboot option [Linux Only]"
+  echo "Example: ./chip-update-firmware -d -f -b stable-gui"
+  exit 1
+fi
 
 FW_DIR="$(pwd)/.firmware"
 FW_IMAGE_DIR="${FW_DIR}/images"
