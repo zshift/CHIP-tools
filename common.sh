@@ -3,6 +3,14 @@
 TIMEOUT=30
 FEL=fel
 
+if [[ -z $(which fel) ]]; then
+  echo "  Error: Unable to locate FEL utility."
+  echo "  Install FEL with:"
+  echo "  CHIP-SDK setup script      [github.com/NextThingCo/CHIP-SDK]"
+  echo "     - or build from source  [github.com/NextThingCo/sunxi-tools]"
+  exit 1
+fi
+
 #------------------------------------------------------------
 onMac() {
   if [ "$(uname)" == "Darwin" ]; then
