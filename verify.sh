@@ -36,19 +36,3 @@ fi
 
 [[ -r "${CHAT_SCRIPT}" ]] || (echo "ERROR: can not read ${CHAT_SCRIPT}" && exit 1)
 /usr/sbin/chat -t $TIMEOUT -E -V -f "${CHAT_SCRIPT}" </dev/${UART_DEVICE} >/dev/${UART_DEVICE} || (echo "ERROR: failed to verify" && exit 1)
-
-sleep 5s
-clear
-echo -e "\n\nFLASH VERIFICATION COMPLETE.\n\n"
-
-echo "   #  #  #"
-echo "  #########"
-echo "###       ###"
-echo "  # {#}   #"
-echo "###   \######"
-echo "  #       #"
-echo "###       ###"
-echo "  ########"
-echo "   #  #  #"
-
-echo -e "\n\nCHIP is ready to roll!\n\n"

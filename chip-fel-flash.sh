@@ -211,3 +211,19 @@ if [[ "${METHOD}" == "fel" ]]; then
 	fi
 fi
 rm -rf "${TMPDIR}"
+
+sleep 5s
+clear
+echo -e "\n\nFLASH VERIFICATION COMPLETE.\n\n"
+
+echo "   #  #  #"
+echo "  #########"
+echo "###       ###"
+echo "  # {#}   #"
+echo "###  '\######"
+echo "  #       #"
+echo "###       ###"
+echo "  ########"
+echo "   #  #  #"
+
+echo -e "\n\nCHIP is ready to roll!\n\n"
