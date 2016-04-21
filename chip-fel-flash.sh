@@ -192,7 +192,7 @@ else
 	assert_error 132
 
 	echo == creating sparse image ==
-	img2simg ${UBI} ${SPARSE_UBI} $((2*1024*1024))
+	img2simg ${UBI} ${SPARSE_UBI} $((4*1024*1024))
 	assert_error 133
 
 	echo == waiting for fastboot ==
