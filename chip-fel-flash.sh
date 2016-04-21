@@ -85,9 +85,9 @@ prepare_images() {
 
 prepare_uboot_script() {
 	if [ "$NAND_ERASE_BB" = true ] ; then
-		echo "nand scrub -y 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
+		echo "nand scrub.chip -y" > "${UBOOT_SCRIPT_SRC}"
 	else
-		echo "nand erase 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
+		echo "nand erase.chip" > "${UBOOT_SCRIPT_SRC}"
 	fi
 
 	echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
