@@ -60,8 +60,8 @@ SPARSE_UBI="${TMPDIR}/rootfs.ubi.sparse"
 UBI_MEM_ADDR=0x4b000000
 
 UBI_SIZE=`filesize $UBI | xargs printf "0x%08x"`
-PAGE_SIZE=16384
-OOB_SIZE=1664
+PAGE_SIZE=4096
+OOB_SIZE=256
 
 prepare_images() {
   #PADDED_SPL_SIZE in pages
@@ -192,7 +192,7 @@ else
 	assert_error 132
 
 	echo == creating sparse image ==
-	img2simg ${UBI} ${SPARSE_UBI} $((4*1024*1024))
+	img2simg ${UBI} ${SPARSE_UBI} $((256*1024))
 	assert_error 133
 
 	echo == waiting for fastboot ==
