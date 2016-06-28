@@ -16,7 +16,7 @@ DL_FLAVOR=serv
 DL_DIST=rootfs
 DL_DIR=".dl"
 
-while getopts "fdphnu:" opt; do
+while getopts "fdphnlu:" opt; do
   case $opt in
     f)
       echo "fastboot enabled"
@@ -38,6 +38,10 @@ while getopts "fdphnu:" opt; do
     n)
       echo "next enabled"
       DL_DIST=testing-rootfs
+      ;;
+    l)
+      echo "next enabled"
+      DL_DIST=desk-nl
       ;;
     u)
       BUILDROOT_OUTPUT_DIR="${OPTARG}"
