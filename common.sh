@@ -70,3 +70,9 @@ wait_for_linuxboot() {
   return 1
 }
 
+#------------------------------------------------------------
+fel_has_progress() {
+  if $(fel 2>&1 | grep progress 2>/dev/null >/dev/null); then
+    echo '--progress'
+  fi
+}
