@@ -46,7 +46,7 @@ PATH=$PATH:$BUILDROOT_OUTPUT_DIR/host/usr/bin
 TMPDIR=`mktemp -d -t chipflashXXXXXX`
 PADDED_SPL="${BUILDROOT_OUTPUT_DIR}/images/sunxi-spl-with-ecc.bin"
 PADDED_SPL_SIZE=0
-UBOOT_SCRIPT="$TMPDIR/uboot.scr"
+UBOOT_SCRIPT=$BUILDROOT_OUTPUT_DIR/images/uboot-env.bin
 UBOOT_SCRIPT_MEM_ADDR=0x43100000
 UBOOT_SCRIPT_SRC="$TMPDIR/uboot.cmds"
 SPL="$BUILDROOT_OUTPUT_DIR/images/sunxi-spl.bin"
@@ -83,64 +83,6 @@ prepare_images() {
 	dd if=/dev/urandom of="$PADDED_UBOOT" seek=$((UBOOT_SIZE / 0x4000)) bs=16k count=$(((PADDED_UBOOT_SIZE - UBOOT_SIZE) / 0x4000))
 }
 
-prepare_uboot_script() {
-	if [ "$NAND_ERASE_BB" = true ] ; then
-		echo "nand scrub -y 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
-	else
-		echo "nand erase 0x0 0x200000000" > "${UBOOT_SCRIPT_SRC}"
-	fi
-
-	echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "nand write.raw.noverify $SPL_MEM_ADDR 0x0 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "echo nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "nand write.raw.noverify $SPL_MEM_ADDR 0x400000 $PADDED_SPL_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-
-	echo "nand write $UBOOT_MEM_ADDR 0x800000 $PADDED_UBOOT_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	echo "setenv bootargs root=ubi0:rootfs rootfstype=ubifs rw earlyprintk ubi.mtd=4" >> "${UBOOT_SCRIPT_SRC}"
-	echo "setenv bootcmd 'gpio set PB2; if test -n \${fel_booted} && test -n \${scriptaddr}; then echo '(FEL boot)'; source \${scriptaddr}; fi; mtdparts; ubi part UBI; ubifsmount ubi0:rootfs; ubifsload \$fdt_addr_r /boot/sun5i-r8-chip.dtb; ubifsload \$kernel_addr_r /boot/zImage; bootz \$kernel_addr_r - \$fdt_addr_r'" >> "${UBOOT_SCRIPT_SRC}"
-  echo "setenv fel_booted 0" >> "${UBOOT_SCRIPT_SRC}"
-
-  echo "echo Enabling Splash" >> "${UBOOT_SCRIPT_SRC}"
-  echo "setenv stdout serial" >> "${UBOOT_SCRIPT_SRC}"
-  echo "setenv stderr serial" >> "${UBOOT_SCRIPT_SRC}"
-  echo "setenv splashpos m,m" >> "${UBOOT_SCRIPT_SRC}"
-
-  echo "echo Configuring Video Mode"
-  if [[ "${POCKET_CHIP}" == "true" ]]; then
-    echo "setenv video-mode" >> "${UBOOT_SCRIPT_SRC}"
-  else
-    echo "setenv video-mode sunxi:640x480-24@60,monitor=composite-ntsc,overscan_x=40,overscan_y=20" >> "${UBOOT_SCRIPT_SRC}"
-  fi
-
-  echo "saveenv" >> "${UBOOT_SCRIPT_SRC}"
-
-  if [[ "${METHOD}" == "fel" ]]; then
-	  echo "nand write.slc-mode.trimffs $UBI_MEM_ADDR 0x1000000 $UBI_SIZE" >> "${UBOOT_SCRIPT_SRC}"
-	  echo "mw \${scriptaddr} 0x0" >> "${UBOOT_SCRIPT_SRC}"
-  else
-    echo "echo going to fastboot mode" >>"${UBOOT_SCRIPT_SRC}"
-    echo "fastboot 0" >>"${UBOOT_SCRIPT_SRC}"
-  fi
-
-  if [[ "${AFTER_FLASHING}" == "boot" ]]; then
-    echo "echo " >>"${UBOOT_SCRIPT_SRC}"
-    echo "echo *****************[ BOOT ]*****************" >>"${UBOOT_SCRIPT_SRC}"
-    echo "echo " >>"${UBOOT_SCRIPT_SRC}"
-    echo "boot" >> "${UBOOT_SCRIPT_SRC}"
-  else
-    echo "echo " >>"${UBOOT_SCRIPT_SRC}"
-    echo "echo *****************[ FLASHING DONE ]*****************" >>"${UBOOT_SCRIPT_SRC}"
-    echo "echo " >>"${UBOOT_SCRIPT_SRC}"
-    if [[ "${METHOD}" == "fel" ]]; then
-      echo "reset"
-    else
-      echo "while true; do; sleep 10; done;" >>"${UBOOT_SCRIPT_SRC}"
-    fi
-  fi
-
-	mkimage -A arm -T script -C none -n "flash CHIP" -d "${UBOOT_SCRIPT_SRC}" "${UBOOT_SCRIPT}"
-}
-
 assert_error() {
 	ERR=$?
 	ERRCODE=$1
@@ -155,7 +97,6 @@ assert_error() {
 
 echo == preparing images ==
 prepare_images
-prepare_uboot_script
 
 echo == upload the SPL to SRAM and execute it ==
 if ! wait_for_fel; then
