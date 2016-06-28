@@ -15,6 +15,7 @@ METHOD=fel
 DL_FLAVOR=serv
 DL_DIST=rootfs
 DL_DIR=".dl"
+NO-LIMIT=""
 
 while getopts "fdphnlu:" opt; do
   case $opt in
@@ -40,8 +41,8 @@ while getopts "fdphnlu:" opt; do
       DL_DIST=testing-rootfs
       ;;
     l)
-      echo "next enabled"
-      DL_DIST=desk-nl
+      echo "no limit selected"
+      NO_LIMIT="nl"
       ;;
     u)
       BUILDROOT_OUTPUT_DIR="${OPTARG}"
@@ -82,13 +83,13 @@ function dl_check {
     if [[ "${DL_FLAVOR}" == "pocket" || "${DL_FLAVOR}" == "pocket-next" ]]; then	
 		  aws s3 cp s3://opensource.nextthing.co/chippian/$DL_DIST/img-$DL_FLAVOR-$DL_METHOD.tar.gz . || exit 1
     else
-		  wget opensource.nextthing.co/chippian/$DL_DIST/img-$DL_FLAVOR-$DL_METHOD.tar.gz|| exit 1
+		  wget opensource.nextthing.co/chippian/$DL_DIST/img-$DL_FLAVOR-$NO_LIMIT-$DL_METHOD.tar.gz|| exit 1
     fi
 
 		echo "Extracting.."
-		tar -xf img-$DL_FLAVOR-$DL_METHOD.tar.gz
+		tar -xf img-$DL_FLAVOR-$NO_LIMIT-$DL_METHOD.tar.gz
 		echo "Staging for flashing"
-		cp -R img-$DL_FLAVOR-$DL_METHOD/images ../$FIRMWARE_DIR/
+		cp -R img-$DL_FLAVOR-$NO_LIMIT-$DL_METHOD/images ../$FIRMWARE_DIR/
 	fi
 	popd
 }
