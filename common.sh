@@ -2,7 +2,7 @@
 
 TIMEOUT=30
 
-if [[ -z $(which fel) ]]; then
+if [[ -z $(which $FEL) ]]; then
   echo "  Error: Unable to locate FEL utility."
   echo "  Install FEL with:"
   echo "  CHIP-SDK setup script      [github.com/NextThingCo/CHIP-SDK]"
