@@ -1,7 +1,6 @@
 #!/bin/bash
 
 TIMEOUT=30
-FEL=fel
 
 if [[ -z $(which fel) ]]; then
   echo "  Error: Unable to locate FEL utility."
