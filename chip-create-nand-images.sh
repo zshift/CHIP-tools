@@ -1,7 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 
-INPUTDIR="$1"
-OUTPUTDIR="$2"
+FEL=sunxi-fel
+
+SCRIPTDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $SCRIPTDIR/common.sh
+
+UBOOTDIR="$1"
+ROOTFSTAR="$2"
+OUTPUTDIR="$3"
 
 # build the UBI image
 prepare_ubi() {
@@ -16,7 +22,10 @@ prepare_ubi() {
   local eraseblocksize="$5"
   local pagesize="$6"
   local subpagesize="$7"
-  local ubi=$outputdir/chip-$eraseblocksize-$pagesize.ubi
+  local ebsize=`printf %x $eraseblocksize`
+  local psize=`printf %x $pagesize`
+  local ubi=$outputdir/chip-$ebsize-$psize.ubi
+  local sparseubi=$outputdir/chip-$ebsize-$psize.ubi.sparse
 
   if [ -z $subpagesize ]; then
     subpagesize=$pagesize
@@ -43,6 +52,7 @@ vol_flags=autoresize
 image=$ubifs" > $ubicfg
 
   ubinize -o $ubi -p $eraseblocksize -m $pagesize -s $subpagesize $ubicfg
+  img2simg $ubi $sparseubi $eraseblocksize
   rm -rf $tmpdir
 }
 
@@ -57,18 +67,22 @@ prepare_spl() {
   local repeat=$((eraseblocksize/pagesize/64))
   local nandspl=$tmpdir/nand-spl.bin
   local nandpaddedspl=$tmpdir/nand-padded-spl.bin
-  local nandrepeatedspl=$outputdir/spl-$eraseblocksize-$pagesize-$oobsize.bin
+  local ebsize=`printf %x $eraseblocksize`
+  local psize=`printf %x $pagesize`
+  local osize=`printf %x $oobsize`
+  local nandrepeatedspl=$outputdir/spl-$ebsize-$psize-$osize.bin
   local padding=$tmpdir/padding
   local splpadding=$tmpdir/nand-spl-padding
 
-  sunxi-nand-image-builder -c 64/1024 -p $pagesize -o $oobsize -u 1024 -e $eraseblocksize -b $spl $nandspl
+  sunxi-nand-image-builder -c 64/1024 -p $pagesize -o $oobsize -u 1024 -e $eraseblocksize -b -s $spl $nandspl
 
+  local splsize=`filesize $nandspl`
+  local paddingsize=$((64-(splsize/(pagesize+oobsize))))
   local i=0
-  while [ $i -lt $repeat ]; do
-    local paddingstart=$((pagesize*24+$i*$pagesize*64))
 
-    dd if=/dev/urandom of=$padding bs=$pagesize count=40
-    sunxi-nand-image-builder -c 64/1024 -p $pagesize -o $oobsize -u 1024 -e $eraseblocksize -b $padding $splpadding
+  while [ $i -lt $repeat ]; do
+    dd if=/dev/urandom of=$padding bs=1024 count=$paddingsize
+    sunxi-nand-image-builder -c 64/1024 -p $pagesize -o $oobsize -u 1024 -e $eraseblocksize -b -s $padding $splpadding
     cat $nandspl $splpadding > $nandpaddedspl
 
     if [ "$i" -eq "0" ]; then
@@ -88,10 +102,17 @@ prepare_uboot() {
   local outputdir=$1
   local uboot=$2
   local eraseblocksize=$3
-  local paddeduboot=$outputdir/uboot-$eraseblocksize.bin
+  local ebsize=`printf %x $eraseblocksize`
+  local paddeduboot=$outputdir/uboot-$ebsize.bin
 
   dd if=$uboot of=$paddeduboot bs=$eraseblocksize conv=sync
 }
+
+## copy the source images in the output dir ##
+mkdir -p $OUTPUTDIR
+cp $UBOOTDIR/spl/sunxi-spl.bin $OUTPUTDIR/
+cp $UBOOTDIR/u-boot-dtb.bin $OUTPUTDIR/
+cp $ROOTFSTAR $OUTPUTDIR/
 
 ## prepare ubi images ##
 # Toshiba SLC image:
@@ -99,18 +120,18 @@ prepare_uboot() {
 # SLC images.
 # prepare_ubi $OUTPUTDIR $INPUTDIR/rootfs.tar "slc" 2048 262144 4096 1024
 # Toshiba/Hynix MLC image:
-prepare_ubi $OUTPUTDIR $INPUTDIR/rootfs.tar "mlc" 4096 4194304 16384 16384
+prepare_ubi $OUTPUTDIR $ROOTFSTAR "mlc" 4096 4194304 16384 16384
 
 ## prepare spl images ##
 # Toshiba SLC image:
-prepare_spl $OUTPUTDIR $INPUTDIR/sunxi-spl.bin 262144 4096 256
+prepare_spl $OUTPUTDIR $UBOOTDIR/spl/sunxi-spl.bin 262144 4096 256
 # Toshiba MLC image:
-prepare_spl $OUTPUTDIR $INPUTDIR/sunxi-spl.bin 4194304 16384 1280
+prepare_spl $OUTPUTDIR $UBOOTDIR/spl/sunxi-spl.bin 4194304 16384 1280
 # Hynix MLC image:
-prepare_spl $OUTPUTDIR $INPUTDIR/sunxi-spl.bin 4194304 16384 1664
+prepare_spl $OUTPUTDIR $UBOOTDIR/spl/sunxi-spl.bin 4194304 16384 1664
 
 ## prepare uboot images ##
 # Toshiba SLC image:
-prepare_uboot $OUTPUTDIR $INPUTDIR/u-boot-dtb.bin 262144
+prepare_uboot $OUTPUTDIR $UBOOTDIR/u-boot-dtb.bin 262144
 # Toshiba/Hynix MLC image:
-prepare_uboot $OUTPUTDIR $INPUTDIR/u-boot-dtb.bin 4194304
+prepare_uboot $OUTPUTDIR $UBOOTDIR/u-boot-dtb.bin 4194304
