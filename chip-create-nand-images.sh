@@ -26,6 +26,7 @@ prepare_ubi() {
   local psize=`printf %x $pagesize`
   local ubi=$outputdir/chip-$ebsize-$psize.ubi
   local sparseubi=$outputdir/chip-$ebsize-$psize.ubi.sparse
+  local mlcopts=""
 
   if [ -z $subpagesize ]; then
     subpagesize=$pagesize
@@ -33,6 +34,7 @@ prepare_ubi() {
 
   if [ "$nandtype" = "mlc" ]; then
     lebsize=$((eraseblocksize/2-$pagesize*2))
+    mlcopts="-M dist3"
   elif [ $subpagesize -lt $pagesize ]; then
     lebsize=$((eraseblocksize-pagesize))
   else
@@ -51,7 +53,7 @@ vol_alignment=1
 vol_flags=autoresize
 image=$ubifs" > $ubicfg
 
-  ubinize -o $ubi -p $eraseblocksize -m $pagesize -s $subpagesize $ubicfg
+  ubinize -o $ubi -p $eraseblocksize -m $pagesize -s $subpagesize $mlcopts $ubicfg
   img2simg $ubi $sparseubi $eraseblocksize
   rm -rf $tmpdir
 }
@@ -116,9 +118,7 @@ cp $ROOTFSTAR $OUTPUTDIR/
 
 ## prepare ubi images ##
 # Toshiba SLC image:
-# not supported yet, because MLC aware ubinize does not support building
-# SLC images.
-# prepare_ubi $OUTPUTDIR $INPUTDIR/rootfs.tar "slc" 2048 262144 4096 1024
+prepare_ubi $OUTPUTDIR $ROOTFSTAR "slc" 2048 262144 4096 1024
 # Toshiba/Hynix MLC image:
 prepare_ubi $OUTPUTDIR $ROOTFSTAR "mlc" 4096 4194304 16384 16384
 
