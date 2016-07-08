@@ -71,14 +71,14 @@ function dl_check {
 		opensource.nextthing.co/chippian/$DL_DIST/latest.md5
 
 	pushd $DL_DIR
-	if [[ $(cat latest.md5 | grep "`md5sum img-$DL_FLAVOR-$DL_METHOD.tar.gz`")\
-	 && -d "img-$DL_FLAVOR-$DL_METHOD/images" ]]; then
+	if [[ $(cat latest.md5 | grep "`md5sum img-$DL_FLAVOR-$NO_LIMIT$DL_METHOD.tar.gz`")\
+	 && -d "img-$DL_FLAVOR-$NO_LIMIT$DL_METHOD/images" ]]; then
 		echo "Cached files located"
 		echo "Staging for flashing"
-		cp -R img-$DL_FLAVOR-$DL_METHOD/images ../$FIRMWARE_DIR/
+		cp -R img-$DL_FLAVOR-$NO_LIMIT$DL_METHOD/images ../$FIRMWARE_DIR/
 	else
 		echo "New image available"
-		rm -rf img-$DL_FLAVOR-$DL_METHOD*
+		rm -rf img-$DL_FLAVOR-$NO_LIMIT$DL_METHOD*
 	
     if [[ "${DL_FLAVOR}" == "pocket" || "${DL_FLAVOR}" == "pocket-next" ]]; then	
 		  aws s3 cp s3://opensource.nextthing.co/chippian/$DL_DIST/img-$DL_FLAVOR-$DL_METHOD.tar.gz . || exit 1
