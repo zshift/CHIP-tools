@@ -96,8 +96,6 @@ flash_images() {
     echo "ERROR: please make sure CHIP is connected and jumpered in FEL mode"
   fi
 
-  img2simg $IMAGESDIR/chip-$nand_erasesize-$nand_writesize.ubi $sparseubi $((4*1024*1024))
-
   $FEL spl $IMAGESDIR/sunxi-spl.bin
   # wait for DRAM initialization to complete
   sleep 1
