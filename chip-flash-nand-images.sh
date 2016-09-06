@@ -21,7 +21,7 @@ detect_nand() {
   local ubootscr=$tmpdir/uboot.scr
 
   echo "nand info
-env export -t -s 0x100 0x10 nand_erasesize nand_writesize nand_oobsize
+env export -t -s 0x100 0x7c00 nand_erasesize nand_writesize nand_oobsize
 reset" > $ubootcmds
   mkimage -A arm -T script -C none -n "detect NAND" -d $ubootcmds $ubootscr
 
@@ -41,7 +41,7 @@ reset" > $ubootcmds
     echo "ERROR: please make sure CHIP is connected and jumpered in FEL mode"
   fi
 
-  $FEL read 0x10 0x100 $tmpdir/nand-info
+  $FEL read 0x7c00 0x100 $tmpdir/nand-info
 
   echo "NAND detected:"
   cat $tmpdir/nand-info
