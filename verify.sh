@@ -38,7 +38,10 @@ if [[ "$(systemctl is-active $GETTY_UART_SERVICE)" == "active" ]]; then
 fi
 
 [[ -r "${CHAT_SCRIPT}" ]] || (echo "ERROR: can not read ${CHAT_SCRIPT}" && exit 1)
-[[ -r "${CHAT_BIN}" ]] || (echo -e "ERROR: ${CHAT_BIN} not found\n -- 'sudo apt-get install ppp'" && exit 1)
+if [[ ! -r "${CHAT_BIN}" ]]; then
+  echo -e "ERROR: ${CHAT_BIN} not found\n -- 'sudo apt-get install ppp'"
+  exit 1
+fi
 
 for i in `seq 1 3`;
 do

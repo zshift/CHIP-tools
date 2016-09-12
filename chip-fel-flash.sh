@@ -214,10 +214,9 @@ if [[ "${METHOD}" == "fel" ]]; then
 		rm -rf ${TMPDIR}
 		exit 1
 	else
-		${SCRIPTDIR}/verify.sh
+		${SCRIPTDIR}/verify.sh || rm -rf "${TMPDIR}" && exit 1
 	fi
 fi
-rm -rf "${TMPDIR}"
 
 ready_to_roll
 
