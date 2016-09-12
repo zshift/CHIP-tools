@@ -118,9 +118,11 @@ verify() {
   for i in `seq 1 3`;
   do
     echo -e "Waiting for serial gadget...Attempt(${i}/3)"
-    /usr/sbin/chat -t $TIMEOUT -E -V -f "${CHAT_SCRIPT}" </dev/${UART_DEVICE} >/dev/${UART_DEVICE}\
-    && break\
-    || (echo -e "ERROR: failed to verify\n" && return 1)
+    /usr/sbin/chat -t $TIMEOUT -E -V -f "${CHAT_SCRIPT}" </dev/${UART_DEVICE} >/dev/${UART_DEVICE} && break
+    if [[ ${i} -eq 3 ]] && [[ $? ]]; then
+      echo -e "ERROR: failed to verify\n"
+      return 1
+    fi
   done
   echo "SUCCESS: CHIP is powering down"
   
