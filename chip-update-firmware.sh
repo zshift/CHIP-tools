@@ -82,12 +82,6 @@ while getopts "ufdpb:w:B:" opt; do
       echo "debian selected"
       WHAT="debian"
       ;;
-    p)
-      echo "PocketC.H.I.P selected"
-      WHAT="pocketchip"
-      BUILD=123
-      FLASH_SCRIPT=./chip-fel-flash.sh -p
-      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -95,6 +89,10 @@ while getopts "ufdpb:w:B:" opt; do
   esac
 done
 
+if [[ "$BRANCH" == "stable-gui" ]] && [ -z $FLASH_SCRIPT_OPTION ]; then
+  echo "ERROR: stable-gui requires fastboot flag [ -f ]"
+  exit 1
+fi
 
 FW_DIR="$(pwd)/.firmware"
 FW_IMAGE_DIR="${FW_DIR}/images"
