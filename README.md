@@ -3,8 +3,10 @@ A collection of scripts for working with CHIP
 
 ## Requirements
 1) [sunxi-tools](https://github.com/linux-sunxi/sunxi-tools.git)
+
 2) **uboot-tools** from your package manager
-2) **mtd-utils-mlc** from our repository (https://github.com/nextthingco/chip-mtd-utils) [for creating images]
+
+3) [mtd-utils-mlc](https://github.com/nextthingco/chip-mtd-utils) [for creating images] from our repository 
 
 ## Included Tools
 ### chip-update-firmware
