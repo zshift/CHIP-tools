@@ -6,7 +6,7 @@ source $SCRIPTDIR/common.sh
 DL_DIR=".dl"
 IMAGESDIR=".new/firmware/images"
 
-DL_URL="http://opensource.nextthing.co/chip/images"
+DL_URL="http://chip.jfpossibilities.com/chip/images"
 
 WGET="wget"
 
