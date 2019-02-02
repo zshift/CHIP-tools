@@ -10,6 +10,8 @@ DL_URL="http://chip.jfpossibilities.com/chip/images"
 
 WGET="wget"
 
+FEL='sudo sunxi-fel' FASTBOOT='sudo fastboot' SNIB=false
+
 FLAVOR=server
 BRANCH=stable
 
